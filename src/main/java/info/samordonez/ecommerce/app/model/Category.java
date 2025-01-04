@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity (name = "sjo_categories")
 public class Category
@@ -12,6 +13,7 @@ public class Category
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Optional: for auto-incremented primary key
     private Long categoryId;
 
+    @NotBlank
     private String categoryName;
 
     // No-argument constructor is required by JPA

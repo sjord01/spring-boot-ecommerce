@@ -2,6 +2,7 @@ package info.samordonez.ecommerce.app.controller;
 
 import info.samordonez.ecommerce.app.model.Category;
 import info.samordonez.ecommerce.app.service.CategoryService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +33,7 @@ public class CategoryController
     }
 
     @PostMapping("/public/categories")
-    public ResponseEntity<String> createCategory(@RequestBody Category category)
+    public ResponseEntity<String> createCategory(@Valid @RequestBody Category category)
     {
         categoryService.addCategory(category);
         return new ResponseEntity<>(("Category " + category.getCategoryId() + " added succesfuly!"), HttpStatus.OK);
