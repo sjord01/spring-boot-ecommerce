@@ -1,35 +1,50 @@
 package info.samordonez.ecommerce.app.service;
 
+import info.samordonez.ecommerce.app.exceptions.APIException;
+import info.samordonez.ecommerce.app.exceptions.ResourceNotFoundException;
 import info.samordonez.ecommerce.app.model.Category;
+import info.samordonez.ecommerce.app.payload.CategoryDTO;
+import info.samordonez.ecommerce.app.payload.CategoryResponse;
 import info.samordonez.ecommerce.app.repositories.CategoryRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 //import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class CategoryServiceImpl implements CategoryService
 {
-    private List<Category> categories = new ArrayList<>();
+    //private List<Category> categories = new ArrayList<>();
     // AtomicLong to ensure thread-safe auto-increment of categoryId
     //private AtomicLong categoryIdCounter = new AtomicLong(1);
 
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Override
-    public List<Category> getAllCategories()
+    public CategoryResponse getAllCategories()
     {
-        return categoryRepository.findAll();
+        List<Category> categories = categoryRepository.findAll();
+        if (categories.isEmpty()) {
+            throw new APIException("No category found");
+        }
+
+        List<CategoryDTO> categoryDTOList = categories.stream().
+                map(c -> modelMapper.map(c, CategoryDTO.class)).toList();
+        CategoryResponse categoryResponse = new CategoryResponse();
+        categoryResponse.setCategoryDTOList(categoryDTOList);
+        return categoryResponse;
     }
 
     @Override
-    public void addCategory(final Category category)
+    public CategoryDTO addCategory(final CategoryDTO categoryDTO)
     {
         /*
         We use AtomicLong for generating unique categoryIds. This ensures that even if the
@@ -39,7 +54,17 @@ public class CategoryServiceImpl implements CategoryService
 //        Long generatedId = categoryIdCounter.getAndIncrement();
 //        category.setCategoryId(generatedId);
 //        categories.add(category);
+
+        Category category = modelMapper.map(categoryDTO, Category.class);
+
+        Category savedCategoryFromDB = categoryRepository.findByCategoryName(category.getCategoryName());
+        if (savedCategoryFromDB != null) {
+            throw new APIException("Category with name " + category.getCategoryName() + " already exists");
+        }
         categoryRepository.save(category);
+
+        Category savedCategory = categoryRepository.save(category);
+        return modelMapper.map(savedCategory, CategoryDTO.class);
     }
 
     @Override
@@ -52,14 +77,24 @@ public class CategoryServiceImpl implements CategoryService
 //        categories.remove(category);
 //        return "Category " + categoryId + " deleted successfully";
 
+//        Optional<Category> category = categoryRepository.findById(categoryId);
+//        if (category.isPresent()) {
+//            // If exists, delete it
+//            categoryRepository.deleteById(categoryId);
+//            return "Category " + categoryId + " deleted successfully";
+//        } else {
+//            // If not found, throw an exception
+//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category " + categoryId + " does not exist");
+//        }
+
         Optional<Category> category = categoryRepository.findById(categoryId);
         if (category.isPresent()) {
             // If exists, delete it
             categoryRepository.deleteById(categoryId);
             return "Category " + categoryId + " deleted successfully";
         } else {
-            // If not found, throw an exception
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category " + categoryId + " does not exist");
+            // If not found, throw custom exception
+            throw new ResourceNotFoundException("Category", "categoryId", categoryId);
         }
     }
 
@@ -79,6 +114,17 @@ public class CategoryServiceImpl implements CategoryService
 //            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ("Category " + categoryId + " does not exist"));
 //        }
 
+//        Optional<Category> existingCategoryOpt = categoryRepository.findById(categoryId);
+//        if (existingCategoryOpt.isPresent()) {
+//            Category existingCategory = existingCategoryOpt.get();
+//            // Update the fields of the existing category
+//            existingCategory.setCategoryName(category.getCategoryName());
+//            // Save the updated category back to the database
+//            return categoryRepository.save(existingCategory);
+//        } else {
+//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category " + categoryId + " does not exist");
+//        }
+
         Optional<Category> existingCategoryOpt = categoryRepository.findById(categoryId);
         if (existingCategoryOpt.isPresent()) {
             Category existingCategory = existingCategoryOpt.get();
@@ -87,11 +133,12 @@ public class CategoryServiceImpl implements CategoryService
             // Save the updated category back to the database
             return categoryRepository.save(existingCategory);
         } else {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category " + categoryId + " does not exist");
+            // If not found, throw custom exception
+            throw new ResourceNotFoundException("Category", "categoryId", categoryId);
         }
     }
 
-    public List<Category> getCategoriesByName(String categoryName) {
+    public Category getCategoriesByName(String categoryName) {
         return categoryRepository.findByCategoryName(categoryName);
     }
 

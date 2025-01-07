@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity (name = "sjo_categories")
 public class Category
@@ -14,6 +15,7 @@ public class Category
     private Long categoryId;
 
     @NotBlank
+    @Size(min = 3, message = "Category name must have at least 3 characters")
     private String categoryName;
 
     // No-argument constructor is required by JPA
