@@ -8,6 +8,10 @@ import info.samordonez.ecommerce.app.payload.CategoryResponse;
 import info.samordonez.ecommerce.app.repositories.CategoryRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -29,9 +33,16 @@ public class CategoryServiceImpl implements CategoryService
     private ModelMapper modelMapper;
 
     @Override
-    public CategoryResponse getAllCategories()
+    public CategoryResponse getAllCategories(final Integer pageNumber,
+                                             final Integer pageSize, final String sortBy, final String sortOrder)
     {
-        List<Category> categories = categoryRepository.findAll();
+        Sort sortByandOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Category> categoryPage = categoryRepository.findAll(pageable);
+        List<Category> categories = categoryPage.getContent();
         if (categories.isEmpty()) {
             throw new APIException("No category found");
         }
@@ -40,6 +51,10 @@ public class CategoryServiceImpl implements CategoryService
                 map(c -> modelMapper.map(c, CategoryDTO.class)).toList();
         CategoryResponse categoryResponse = new CategoryResponse();
         categoryResponse.setCategoryDTOList(categoryDTOList);
+        categoryResponse.setPageNumber(categoryPage.getNumber());
+        categoryResponse.setTotalElements(categoryPage.getTotalElements());
+        categoryResponse.setTotalPages(categoryPage.getTotalPages());
+        categoryResponse.setIsLastPage(categoryPage.isLast());
         return categoryResponse;
     }
 
